@@ -1,3 +1,4 @@
+
 // AI Service with Enhanced Backend Integration
 import OpenAI from 'openai';
 
@@ -38,17 +39,22 @@ export async function generateChatResponse(message: string, context?: any): Prom
       body: JSON.stringify({
         question: message,
         context: context
-      })
+      }),
+      // Add timeout to prevent hanging requests
+      signal: AbortSignal.timeout(10000) // 10 second timeout
     });
 
     if (response.ok) {
       const data = await response.json();
       return data.answer || "I'm here to help optimize your productivity! How can I assist you today?";
     } else {
-      throw new Error('Backend API failed');
+      throw new Error(`Backend API failed with status ${response.status}`);
     }
   } catch (error) {
-    console.warn('Backend unavailable, trying OpenAI fallback:', error);
+    // Don't log warnings to console to avoid spam
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('Backend request timed out, using fallback response');
+    }
     
     // Fallback to OpenAI if available
     if (openai) {
@@ -89,7 +95,7 @@ export async function generateChatResponse(message: string, context?: any): Prom
 
         return response.choices[0].message?.content || "I'm here to help optimize your productivity! How can I assist you today?";
       } catch (openaiError) {
-        console.error('OpenAI fallback failed:', openaiError);
+        // Don't log errors to console to avoid spam
       }
     }
     
@@ -108,7 +114,9 @@ export async function generateTaskInsights(prompt: string): Promise<TaskAnalysis
       },
       body: JSON.stringify({
         taskDescription: prompt
-      })
+      }),
+      // Add timeout to prevent hanging requests
+      signal: AbortSignal.timeout(10000) // 10 second timeout
     });
 
     if (response.ok) {
@@ -118,7 +126,10 @@ export async function generateTaskInsights(prompt: string): Promise<TaskAnalysis
       }
     }
   } catch (error) {
-    console.warn('Backend task analysis unavailable:', error);
+    // Don't log warnings to console to avoid spam
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('Backend task analysis timed out, using fallback');
+    }
   }
 
   // Fallback to OpenAI or enhanced local processing
@@ -174,7 +185,9 @@ export async function generateEmailReply(emailContent: string, context: string):
       body: JSON.stringify({
         emailContent: emailContent,
         context: context
-      })
+      }),
+      // Add timeout to prevent hanging requests
+      signal: AbortSignal.timeout(10000) // 10 second timeout
     });
 
     if (response.ok) {
@@ -182,7 +195,10 @@ export async function generateEmailReply(emailContent: string, context: string):
       return data.reply || "Thank you for your email. I'll review this and get back to you shortly.";
     }
   } catch (error) {
-    console.warn('Backend email reply unavailable:', error);
+    // Don't log warnings to console to avoid spam
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('Backend email reply timed out, using fallback');
+    }
   }
 
   // Fallback to OpenAI or enhanced local processing
@@ -361,21 +377,30 @@ function generateEnhancedChatResponse(message: string, context?: any): string {
 function generateEnhancedEmailReply(emailContent: string, context: string): string {
   const lowerContent = emailContent.toLowerCase();
   
+  // Use context to provide more personalized responses
+  const isWorkRelated = context.toLowerCase().includes('work') || context.toLowerCase().includes('business');
+  
   if (lowerContent.includes('deadline') || lowerContent.includes('urgent')) {
-    return "Thank you for the urgent update. I'll prioritize this and provide a response by end of day. I'll keep you posted on progress.";
+    const urgency = isWorkRelated ? "I'll prioritize this and provide a response by end of day." : "I'll get back to you as soon as possible.";
+    return `Thank you for the urgent update. ${urgency} I'll keep you posted on progress.`;
   }
   
   if (lowerContent.includes('meeting') || lowerContent.includes('schedule')) {
-    return "Thanks for reaching out about scheduling. I'll check my calendar and send you a few time options that work well for both of us.";
+    const scheduling = isWorkRelated ? "I'll check my work calendar" : "I'll check my schedule";
+    return `Thanks for reaching out about scheduling. ${scheduling} and send you a few time options that work well for both of us.`;
   }
   
   if (lowerContent.includes('project') || lowerContent.includes('update')) {
-    return "Thank you for the project update. I'll review the details and provide feedback shortly. Let me know if you need anything else in the meantime.";
+    const response = isWorkRelated ? "Thank you for the project update. I'll review the details and provide feedback shortly." : "Thank you for the update. I'll review this and get back to you.";
+    return `${response} Let me know if you need anything else in the meantime.`;
   }
   
   if (lowerContent.includes('question') || lowerContent.includes('clarification')) {
-    return "Great question! I'll gather the information you need and get back to you with a comprehensive response within 24 hours.";
+    const timeframe = isWorkRelated ? "within 24 hours" : "as soon as I can";
+    return `Great question! I'll gather the information you need and get back to you with a comprehensive response ${timeframe}.`;
   }
   
-  return "Thank you for your email. I've received your message and will respond appropriately. I appreciate your communication.";
+  // Use context for more personalized closing
+  const closing = isWorkRelated ? "I appreciate your communication and look forward to working with you." : "I appreciate you reaching out.";
+  return `Thank you for your email. I've received your message and will respond appropriately. ${closing}`;
 }

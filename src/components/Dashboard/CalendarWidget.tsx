@@ -1,242 +1,332 @@
-import React from 'react';
-import { Calendar, Clock, Users, MapPin, AlertCircle, TrendingUp } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { GoogleLogin, googleLogout } from '@react-oauth/google';
 import { useApp } from '../../contexts/AppContext';
-import { CalendarEvent, FocusTimeAnalysis } from '../../services/calendarService';
-import { format, isToday, isTomorrow } from 'date-fns';
+import { Plus, Globe2, CalendarDays, CheckCircle, Star, MoreHorizontal } from 'lucide-react';
 
-interface CalendarWidgetProps {
-  events: CalendarEvent[];
-  focusAnalysis: FocusTimeAnalysis | null;
-  loading: boolean;
+// Google Public Holiday Calendar ID for US holidays (can be parameterized)
+const HOLIDAY_CALENDAR_ID = 'en.usa#holiday@group.v.calendar.google.com';
+
+const TIMEZONES = [
+  { label: 'UTC', value: 'UTC' },
+  { label: 'US Eastern', value: 'America/New_York' },
+  { label: 'US Central', value: 'America/Chicago' },
+  { label: 'US Mountain', value: 'America/Denver' },
+  { label: 'US Pacific', value: 'America/Los_Angeles' },
+  { label: 'London', value: 'Europe/London' },
+  { label: 'Berlin', value: 'Europe/Berlin' },
+  { label: 'India', value: 'Asia/Kolkata' },
+  { label: 'Singapore', value: 'Asia/Singapore' },
+  { label: 'Tokyo', value: 'Asia/Tokyo' },
+];
+
+function getMonthMatrix(year: number, month: number) {
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const matrix = [];
+  let week = [];
+  // Start from the Sunday before or on the first day of the month
+  let day = new Date(firstDay);
+  day.setDate(day.getDate() - day.getDay());
+  // End on the Saturday after or on the last day of the month
+  const endDay = new Date(lastDay);
+  endDay.setDate(endDay.getDate() + (6 - endDay.getDay()));
+  while (day <= endDay) {
+    week.push(new Date(day));
+    if (week.length === 7) {
+      matrix.push(week);
+      week = [];
+    }
+    day.setDate(day.getDate() + 1);
+  }
+  return matrix;
 }
 
-export function CalendarWidget({ events, focusAnalysis, loading }: CalendarWidgetProps) {
-  const { state } = useApp();
+export function CalendarWidget() {
+  const { state, dispatch } = useApp();
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [events, setEvents] = useState<any[]>([]);
+  const [holidays, setHolidays] = useState<any[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [month, setMonth] = useState<number>(new Date().getMonth());
+  const [year, setYear] = useState<number>(new Date().getFullYear());
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDesc, setNewTaskDesc] = useState('');
+  const [timezone, setTimezone] = useState<string>('UTC');
+  const [currentTime, setCurrentTime] = useState<string>('');
 
-  const formatEventTime = (event: CalendarEvent) => {
-    if (!event.start.dateTime) return 'All day';
-    
-    const start = new Date(event.start.dateTime);
-    const end = new Date(event.end.dateTime!);
-    
-    return `${format(start, 'h:mm a')} - ${format(end, 'h:mm a')}`;
-  };
+  useEffect(() => {
+    const token = localStorage.getItem('googleAccessToken');
+    if (token) {
+      setAccessToken(token);
+    }
+  }, []);
 
-  const getEventDate = (event: CalendarEvent) => {
-    const date = new Date(event.start.dateTime || event.start.date!);
-    
-    if (isToday(date)) return 'Today';
-    if (isTomorrow(date)) return 'Tomorrow';
-    return format(date, 'MMM d');
-  };
+  // Real-time clock for selected timezone
+  useEffect(() => {
+    function updateTime() {
+      const now = new Date();
+      setCurrentTime(
+        new Intl.DateTimeFormat('en-US', {
+          hour: '2-digit', minute: '2-digit', second: '2-digit',
+          hour12: false, timeZone: timezone
+        }).format(now)
+      );
+    }
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, [timezone]);
 
-  const formatFocusTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-  };
+  // Fetch events for the visible month
+  useEffect(() => {
+    if (accessToken) {
+      const timeMin = new Date(year, month, 1).toISOString();
+      const timeMax = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+      fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      })
+        .then(res => res.json())
+        .then(data => setEvents(data.items || []));
+    }
+  }, [accessToken, month, year]);
 
-  if (loading) {
-    return (
-      <div className={`${
-        state.theme === 'dark' 
-          ? 'bg-gray-800 border-gray-700' 
-          : 'bg-white border-gray-200'
-      } rounded-2xl border shadow-lg p-6`}>
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-1/3"></div>
-          <div className="space-y-3">
-            <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
-            <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
-          </div>
-        </div>
-      </div>
-    );
+  // Fetch holidays for the visible month
+  useEffect(() => {
+    if (accessToken) {
+      const timeMin = new Date(year, month, 1).toISOString();
+      const timeMax = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+      fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(HOLIDAY_CALENDAR_ID)}/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      })
+        .then(res => res.json())
+        .then(data => setHolidays(data.items || []));
+    }
+  }, [accessToken, month, year]);
+
+  // Get tasks for a specific date
+  function getTasksForDate(date: Date) {
+    return state.tasks.filter(task => {
+      if (!task.dueDate) return false;
+      const due = new Date(task.dueDate);
+      return due.getFullYear() === date.getFullYear() &&
+        due.getMonth() === date.getMonth() &&
+        due.getDate() === date.getDate();
+    });
   }
 
+  // Get events for a specific date
+  function getEventsForDate(date: Date) {
+    return events.filter(event => {
+      const start = event.start.dateTime ? new Date(event.start.dateTime) : new Date(event.start.date);
+      return start.getFullYear() === date.getFullYear() &&
+        start.getMonth() === date.getMonth() &&
+        start.getDate() === date.getDate();
+    });
+  }
+
+  // Get holidays for a specific date
+  function getHolidaysForDate(date: Date) {
+    return holidays.filter(event => {
+      const start = event.start.dateTime ? new Date(event.start.dateTime) : new Date(event.start.date);
+      return start.getFullYear() === date.getFullYear() &&
+        start.getMonth() === date.getMonth() &&
+        start.getDate() === date.getDate();
+    });
+  }
+
+  function handleAddTask(date: Date) {
+    setSelectedDate(date);
+    setShowModal(true);
+    setNewTaskTitle('');
+    setNewTaskDesc('');
+  }
+
+  function handleSaveTask() {
+    if (!selectedDate || !newTaskTitle.trim()) return;
+    dispatch({
+      type: 'ADD_TASK',
+      payload: {
+        id: Date.now().toString(),
+        title: newTaskTitle,
+        description: newTaskDesc,
+        priority: 'medium',
+        status: 'pending',
+        dueDate: selectedDate,
+        estimatedTime: 60,
+        tags: [],
+        category: 'work',
+        createdAt: new Date(),
+        isAIGenerated: false
+      }
+    });
+    setShowModal(false);
+  }
+
+  const monthMatrix = getMonthMatrix(year, month);
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
   return (
-    <div className={`${
-      state.theme === 'dark' 
-        ? 'bg-gray-800 border-gray-700' 
-        : 'bg-white border-gray-200'
-    } rounded-2xl border shadow-lg p-6 transition-all duration-300`}>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className={`text-xl font-semibold ${
-          state.theme === 'dark' ? 'text-white' : 'text-gray-900'
-        }`}>
-          Calendar & Focus Time
-        </h2>
-        <Calendar className={`w-5 h-5 ${
-          state.theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
-        }`} />
+    <div className="bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-2xl p-6 shadow-lg">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+        <div className="flex items-center gap-2">
+          <Globe2 className="w-5 h-5 text-blue-700 dark:text-blue-300" />
+          <select
+            className="rounded-lg border px-2 py-1 text-sm bg-white dark:bg-gray-900 dark:text-white"
+            value={timezone}
+            onChange={e => setTimezone(e.target.value)}
+          >
+            {TIMEZONES.map(tz => (
+              <option key={tz.value} value={tz.value}>{tz.label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <CalendarDays className="w-5 h-5 text-blue-700 dark:text-blue-300" />
+          <span className="font-mono text-lg font-semibold text-blue-900 dark:text-blue-200">{currentTime}</span>
+          <span className="text-xs text-gray-500 ml-2">({timezone})</span>
+        </div>
       </div>
-
-      {/* Focus Time Analysis */}
-      {focusAnalysis && (
-        <div className={`p-4 rounded-xl mb-6 ${
-          state.theme === 'dark' ? 'bg-blue-900/20' : 'bg-blue-50'
-        }`}>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="text-center">
-              <div className={`text-2xl font-bold ${
-                state.theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
-              }`}>
-                {formatFocusTime(focusAnalysis.totalFocusTime)}
-              </div>
-              <div className={`text-sm ${
-                state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                Focus Time Available
-              </div>
-            </div>
-            <div className="text-center">
-              <div className={`text-2xl font-bold ${
-                focusAnalysis.meetingLoad > 70 
-                  ? 'text-red-500' 
-                  : focusAnalysis.meetingLoad > 50 
-                    ? 'text-orange-500' 
-                    : 'text-green-500'
-              }`}>
-                {Math.round(focusAnalysis.meetingLoad)}%
-              </div>
-              <div className={`text-sm ${
-                state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                Meeting Load
-              </div>
-            </div>
+      <h2 className="text-xl font-semibold mb-4 text-blue-700 dark:text-blue-300 flex items-center">
+        <span className="mr-2">📅</span> Calendar & Focus Time
+      </h2>
+      {!accessToken ? (
+        <div className="flex flex-col items-center">
+          <GoogleLogin
+            onSuccess={credentialResponse => {
+              if (credentialResponse.credential) {
+                setAccessToken(credentialResponse.credential);
+                localStorage.setItem('googleAccessToken', credentialResponse.credential);
+              }
+            }}
+            onError={() => {
+              alert('Google Login Failed');
+            }}
+            useOneTap
+          />
+          <p className="mt-4 text-gray-500 text-sm">Connect your Google Calendar to see your meetings, holidays, and tasks.</p>
+        </div>
+      ) : (
+        <div>
+          {/* Month navigation */}
+          <div className="flex items-center justify-between mb-2">
+            <button onClick={() => {
+              if (month === 0) {
+                setMonth(11);
+                setYear(year - 1);
+              } else {
+                setMonth(month - 1);
+              }
+            }} className="px-3 py-1 rounded bg-blue-200 text-blue-900 font-semibold hover:bg-blue-300">&#60;</button>
+            <span className="font-bold text-lg">{monthNames[month]} {year}</span>
+            <button onClick={() => {
+              if (month === 11) {
+                setMonth(0);
+                setYear(year + 1);
+              } else {
+                setMonth(month + 1);
+              }
+            }} className="px-3 py-1 rounded bg-blue-200 text-blue-900 font-semibold hover:bg-blue-300">&#62;</button>
           </div>
-
-          {/* Available Focus Slots */}
-          {focusAnalysis.availableSlots.length > 0 && (
-            <div className="mb-4">
-              <h4 className={`text-sm font-medium mb-2 ${
-                state.theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                Available Focus Blocks:
-              </h4>
-              <div className="space-y-1">
-                {focusAnalysis.availableSlots.slice(0, 3).map((slot, index) => (
-                  <div
-                    key={index}
-                    className={`text-xs px-2 py-1 rounded ${
-                      state.theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {format(slot.start, 'h:mm a')} - {format(slot.end, 'h:mm a')} 
-                    ({formatFocusTime(slot.duration)})
+          {/* Calendar grid */}
+          <div className="grid grid-cols-7 gap-1 mb-4">
+            {dayNames.map(day => (
+              <div key={day} className="text-center font-semibold text-blue-700 dark:text-blue-300 text-xs py-1">{day}</div>
+            ))}
+            {monthMatrix.flat().map((date, idx) => {
+              const isCurrentMonth = date.getMonth() === month && date.getFullYear() === year;
+              const isToday = date.toDateString() === new Date().toDateString();
+              const tasks = getTasksForDate(date);
+              const events = getEventsForDate(date);
+              const hols = getHolidaysForDate(date);
+              const items = [
+                ...hols.map(h => ({ type: 'holiday', summary: h.summary })),
+                ...events.map(e => ({ type: 'event', summary: e.summary })),
+                ...tasks.map(t => ({ type: 'task', summary: t.title })),
+              ];
+              const visibleItems = items.slice(0, 2);
+              const moreCount = items.length - visibleItems.length;
+              return (
+                <div
+                  key={idx}
+                  className={`relative group rounded-lg aspect-square min-h-[48px] max-h-[64px] border flex flex-col items-center transition-all duration-200 bg-white dark:bg-gray-900/60 ${isCurrentMonth ? '' : 'opacity-40'} ${isToday ? 'border-blue-500' : 'border-blue-100 dark:border-blue-800'} hover:border-blue-400`}
+                  style={{ padding: 0 }}
+                >
+                  {/* Date number, centered, with circle for today */}
+                  <div className="flex items-center justify-center w-full mt-1 mb-0.5">
+                    <span className={`font-bold text-xs ${isToday ? 'bg-blue-500 text-white rounded-full px-2 py-0.5' : 'text-blue-900 dark:text-blue-100'}`}>{date.getDate()}</span>
                   </div>
-                ))}
+                  {/* + button, only on hover */}
+                  <button
+                    className="absolute top-1 right-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-100 hover:bg-blue-300 dark:bg-blue-900/40 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-200 rounded-full p-1 shadow-sm"
+                    style={{ lineHeight: 0 }}
+                    title="Add Task"
+                    onClick={() => handleAddTask(date)}
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                  {/* Items as colored dots or short text */}
+                  <div className="flex-1 w-full flex flex-col items-center justify-start gap-0.5 px-1 overflow-hidden">
+                    {visibleItems.map((item, i) => (
+                      <div key={i} className={`flex items-center gap-1 text-[10px] w-full truncate ${item.type === 'holiday' ? 'text-green-700 dark:text-green-400' : item.type === 'event' ? 'text-blue-700 dark:text-blue-300' : 'text-purple-700 dark:text-purple-300'}`}
+                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                      >
+                        {item.type === 'holiday' && <Star className="w-3 h-3 text-green-400" />}
+                        {item.type === 'event' && <CalendarDays className="w-3 h-3 text-blue-400" />}
+                        {item.type === 'task' && <CheckCircle className="w-3 h-3 text-purple-400" />}
+                        <span className="truncate">{item.summary}</span>
+                      </div>
+                    ))}
+                    {moreCount > 0 && (
+                      <div className="flex items-center gap-1 text-[10px] text-gray-400 w-full">
+                        <MoreHorizontal className="w-3 h-3" /> +{moreCount} more
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Add Task Modal */}
+          {showModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-xl w-full max-w-sm">
+                <h3 className="text-lg font-bold mb-4">Add Task for {selectedDate?.toLocaleDateString()}</h3>
+                <input
+                  className="w-full mb-2 p-2 rounded border"
+                  placeholder="Task title"
+                  value={newTaskTitle}
+                  onChange={e => setNewTaskTitle(e.target.value)}
+                />
+                <textarea
+                  className="w-full mb-2 p-2 rounded border"
+                  placeholder="Description (optional)"
+                  value={newTaskDesc}
+                  onChange={e => setNewTaskDesc(e.target.value)}
+                />
+                <div className="flex justify-end space-x-2">
+                  <button onClick={() => setShowModal(false)} className="px-4 py-2 rounded bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300">Cancel</button>
+                  <button onClick={handleSaveTask} className="px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700">Add Task</button>
+                </div>
               </div>
             </div>
           )}
-
-          {/* Suggestions */}
-          {focusAnalysis.suggestions.length > 0 && (
-            <div className="space-y-2">
-              {focusAnalysis.suggestions.map((suggestion, index) => (
-                <div
-                  key={index}
-                  className={`flex items-start space-x-2 text-xs ${
-                    state.theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                  }`}
-                >
-                  <TrendingUp className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                  <span>{suggestion}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <button
+            className="mt-4 px-4 py-2 rounded bg-red-600 text-white font-semibold hover:bg-red-700 transition"
+            onClick={() => {
+              setAccessToken(null);
+              localStorage.removeItem('googleAccessToken');
+              googleLogout();
+            }}
+          >
+            Disconnect Google Calendar
+          </button>
         </div>
       )}
-
-      {/* Today's Events */}
-      <div className="space-y-4">
-        <h3 className={`text-lg font-medium ${
-          state.theme === 'dark' ? 'text-white' : 'text-gray-900'
-        }`}>
-          Today's Schedule
-        </h3>
-
-        {events.length === 0 ? (
-          <div className={`text-center py-6 ${
-            state.theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
-          }`}>
-            <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>No events scheduled for today</p>
-            <p className="text-sm mt-1">Perfect day for deep focus work!</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {events.slice(0, 4).map((event, index) => (
-              <div
-                key={event.id}
-                className={`p-3 rounded-lg border transition-all duration-200 hover:shadow-md ${
-                  state.theme === 'dark'
-                    ? 'bg-gray-700 border-gray-600 hover:bg-gray-650'
-                    : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                }`}
-                style={{
-                  animation: `fadeInUp 0.4s ease-out ${index * 0.1}s both`
-                }}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className={`font-medium mb-1 ${
-                      state.theme === 'dark' ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      {event.summary}
-                    </h4>
-                    
-                    <div className="flex items-center space-x-4 text-sm">
-                      <div className={`flex items-center space-x-1 ${
-                        state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
-                        <Clock className="w-3 h-3" />
-                        <span>{formatEventTime(event)}</span>
-                      </div>
-                      
-                      {event.location && (
-                        <div className={`flex items-center space-x-1 ${
-                          state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                        }`}>
-                          <MapPin className="w-3 h-3" />
-                          <span className="truncate max-w-24">{event.location}</span>
-                        </div>
-                      )}
-                      
-                      {event.attendees && event.attendees.length > 0 && (
-                        <div className={`flex items-center space-x-1 ${
-                          state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                        }`}>
-                          <Users className="w-3 h-3" />
-                          <span>{event.attendees.length}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className={`px-2 py-1 rounded text-xs font-medium ${
-                    state.theme === 'dark' 
-                      ? 'bg-blue-900/30 text-blue-300' 
-                      : 'bg-blue-100 text-blue-700'
-                  }`}>
-                    {getEventDate(event)}
-                  </div>
-                </div>
-              </div>
-            ))}
-            
-            {events.length > 4 && (
-              <div className={`text-center py-2 ${
-                state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                <span className="text-sm">+{events.length - 4} more events</span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
     </div>
   );
 }

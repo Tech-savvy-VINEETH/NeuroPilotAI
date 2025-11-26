@@ -1,135 +1,96 @@
-import React, { useEffect } from 'react';
-import { AppProvider, useApp } from './contexts/AppContext';
+import React from 'react';
 import { Sidebar } from './components/Layout/Sidebar';
 import { Dashboard } from './views/Dashboard';
 import { Tasks } from './views/Tasks';
 import { Emails } from './views/Emails';
 import { Chat } from './views/Chat';
 import { Settings } from './views/Settings';
-import { LoginScreen } from './components/Auth/LoginScreen';
-import { useAuth } from './hooks/useAuth';
-import { applyThemeToDocument } from './utils/themeUtils';
+import { AppProvider, useApp } from './contexts/AppContext';
+
+// Component error boundary for individual components
+class ComponentErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback?: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.log('Component error:', error.message);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="p-4 text-center text-gray-500">
+          <p>Component temporarily unavailable</p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 function AppContent() {
   const { state } = useApp();
-  const { 
-    user, 
-    loading, 
-    loginWithGoogle, 
-    loginWithGoogleRedirect, 
-    loginWithEmail,
-    signUpWithEmailPassword,
-    sendEmailSignInLink,
-    sendPasswordReset,
-    logout, 
-    isAuthenticated, 
-    authError, 
-    clearError,
-    isDomainAuthorized
-  } = useAuth();
 
-  useEffect(() => {
-    // Apply theme to document
-    applyThemeToDocument(state.theme);
-
-    // Update title based on active view
-    const titles = {
-      dashboard: 'Dashboard - NeuroPilot',
-      tasks: 'Tasks - NeuroPilot',
-      emails: 'Emails - NeuroPilot',
-      chat: 'AI Chat - NeuroPilot',
-      settings: 'Settings - NeuroPilot'
-    };
-    document.title = titles[state.activeView] || 'NeuroPilot - AI Productivity Copilot';
-  }, [state.theme, state.activeView]);
-
-  // Show loading screen while checking authentication
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white text-lg">Loading NeuroPilot...</p>
+  const renderView = () => {
+    try {
+      switch (state.activeView) {
+        case 'dashboard':
+          return <Dashboard />;
+        case 'tasks':
+          return <Tasks />;
+        case 'emails':
+          return <Emails />;
+        case 'chat':
+          return <Chat />;
+        case 'settings':
+          return <Settings />;
+        default:
+          return <Dashboard />;
+      }
+    } catch (error) {
+      console.log('Error rendering view:', error);
+      // Return a simple fallback instead of crashing
+      return (
+        <div className="p-8 text-center">
+          <h2 className="text-xl font-semibold mb-4">Loading...</h2>
+          <p>Please wait while the application loads.</p>
         </div>
-      </div>
-    );
-  }
-
-  // Show login screen if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <LoginScreen 
-        onLogin={loginWithGoogle} 
-        onLoginWithRedirect={loginWithGoogleRedirect}
-        onEmailLogin={loginWithEmail}
-        onEmailSignUp={signUpWithEmailPassword}
-        onPasswordReset={sendPasswordReset}
-        onSendEmailLink={sendEmailSignInLink}
-        loading={loading} 
-        authError={authError}
-        onClearError={clearError}
-        isDomainAuthorized={isDomainAuthorized}
-      />
-    );
-  }
-
-  const renderActiveView = () => {
-    switch (state.activeView) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'tasks':
-        return <Tasks />;
-      case 'emails':
-        return <Emails />;
-      case 'chat':
-        return <Chat />;
-      case 'settings':
-        return <Settings />;
-      default:
-        return <Dashboard />;
+      );
     }
-  };
-
-  const getThemeClasses = () => {
-    if (state.theme === 'dark') {
-      return 'bg-gray-900';
-    }
-    
-    const themeBackgrounds = {
-      light: 'bg-gray-50',
-      blue: 'bg-blue-50',
-      purple: 'bg-purple-50',
-      green: 'bg-green-50',
-      orange: 'bg-orange-50',
-      red: 'bg-red-50',
-      pink: 'bg-pink-50',
-      indigo: 'bg-indigo-50',
-      teal: 'bg-teal-50'
-    };
-    
-    return themeBackgrounds[state.theme] || 'bg-gray-50';
   };
 
   return (
-    <div className={`min-h-screen transition-all duration-300 ${getThemeClasses()}`}>
-      <div className="flex h-screen">
-        <Sidebar user={user} />
-        <main className="flex-1 overflow-auto">
-          <div className="p-8 max-w-7xl mx-auto h-full">
-            {renderActiveView()}
-          </div>
-        </main>
-      </div>
+    <div className={`min-h-screen flex transition-colors duration-300 ${
+      state.theme === 'dark' ? 'bg-gray-100 dark:bg-gray-900' : 'bg-gray-50'
+    }`}>
+      <ComponentErrorBoundary>
+        <Sidebar />
+      </ComponentErrorBoundary>
+      <main className={`flex-1 p-8 overflow-auto transition-colors duration-300 ${
+        state.theme === 'dark' ? 'bg-gray-100 dark:bg-gray-900' : 'bg-gray-50'
+      }`}>
+        <ComponentErrorBoundary>
+          {renderView()}
+        </ComponentErrorBoundary>
+      </main>
     </div>
   );
 }
 
-function App() {
+export default function App() {
   return (
     <AppProvider>
       <AppContent />
     </AppProvider>
   );
 }
-
-export default App;

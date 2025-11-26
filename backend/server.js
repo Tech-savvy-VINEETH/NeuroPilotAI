@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import fetch from 'node-fetch';
 import { google } from 'googleapis';
+import fs from 'fs';
 
 const app = express();
 const PORT = 8000;
@@ -406,6 +407,25 @@ app.post('/generate-email-reply', async (req, res) => {
       error: "Failed to generate email reply",
       details: error.message
     });
+  }
+});
+
+// Analytics endpoint
+app.post('/analytics', (req, res) => {
+  try {
+    const analyticsData = req.body;
+    analyticsData.timestamp = new Date().toISOString();
+    const logLine = JSON.stringify(analyticsData) + '\n';
+    fs.appendFile('analytics.log', logLine, (err) => {
+      if (err) {
+        console.error('Failed to write analytics data:', err);
+        return res.status(500).json({ status: 'error', message: 'Failed to store analytics data' });
+      }
+      res.json({ status: 'success', message: 'Analytics data stored' });
+    });
+  } catch (error) {
+    console.error('Analytics endpoint error:', error);
+    res.status(500).json({ status: 'error', message: 'Internal server error' });
   }
 });
 

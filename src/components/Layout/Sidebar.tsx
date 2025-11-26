@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   LayoutDashboard, 
   CheckSquare, 
@@ -14,16 +13,9 @@ import {
   User
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
-import { useAuth } from '../../hooks/useAuth';
-import { User as FirebaseUser } from 'firebase/auth';
 
-interface SidebarProps {
-  user: FirebaseUser | null;
-}
-
-export function Sidebar({ user }: SidebarProps) {
+export function Sidebar() {
   const { state, dispatch } = useApp();
-  const { logout } = useAuth();
 
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -39,14 +31,6 @@ export function Sidebar({ user }: SidebarProps) {
 
   const toggleMode = () => {
     dispatch({ type: 'SET_MODE', payload: state.mode === 'focus' ? 'relax' : 'focus' });
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
   };
 
   return (
@@ -77,39 +61,29 @@ export function Sidebar({ user }: SidebarProps) {
       </div>
 
       {/* User Profile */}
-      {user && (
-        <div className={`p-4 border-b ${
-          state.theme === 'dark' ? 'border-gray-800' : 'border-gray-200'
-        }`}>
-          <div className="flex items-center space-x-3">
-            {user.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt={user.displayName || 'User'}
-                className="w-8 h-8 rounded-full"
-              />
-            ) : (
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                state.theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
-              }`}>
-                <User className="w-4 h-4" />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className={`text-sm font-medium truncate ${
-                state.theme === 'dark' ? 'text-white' : 'text-gray-900'
-              }`}>
-                {user.displayName || 'User'}
-              </p>
-              <p className={`text-xs truncate ${
-                state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                {user.email}
-              </p>
-            </div>
+      <div className={`p-4 border-b ${
+        state.theme === 'dark' ? 'border-gray-800' : 'border-gray-200'
+      }`}>
+        <div className="flex items-center space-x-3">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+            state.theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
+          }`}>
+            <User className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm font-medium truncate ${
+              state.theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              User
+            </p>
+            <p className={`text-xs truncate ${
+              state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              user@example.com
+            </p>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2">
@@ -200,7 +174,10 @@ export function Sidebar({ user }: SidebarProps) {
 
         {/* Logout Button */}
         <button
-          onClick={handleLogout}
+          onClick={() => {
+            localStorage.removeItem('googleAccessToken');
+            window.location.reload(); // Simple way to reset app to login
+          }}
           className={`w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 ${
             state.theme === 'dark'
               ? 'bg-red-900/20 text-red-400 hover:bg-red-900/30'
