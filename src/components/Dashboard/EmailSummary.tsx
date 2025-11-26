@@ -138,14 +138,14 @@ export function EmailSummary() {
                       animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`
                     }}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <Mail className={`w-4 h-4 ${
+                    <div className="flex items-start justify-between mb-3 gap-2">
+                      <div className="flex items-center space-x-3 min-w-0 flex-1">
+                        <Mail className={`w-4 h-4 flex-shrink-0 ${
                           email.isRead
                             ? state.theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
                             : state.theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
                         }`} />
-                        <span className={`font-semibold text-sm ${
+                        <span className={`font-semibold text-sm truncate ${
                           email.isRead
                             ? state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                             : state.theme === 'dark' ? 'text-white' : 'text-gray-900'
@@ -153,14 +153,14 @@ export function EmailSummary() {
                           {email.sender}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 flex-shrink-0">
                         {priorityLabel && (
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${priorityLabel.color}`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${priorityLabel.color}`}>
                             {priorityLabel.label}
                           </span>
                         )}
                         {getPriorityIcon(email.priority)}
-                        <span className={`text-xs ${
+                        <span className={`text-xs whitespace-nowrap ${
                           state.theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
                         }`}>
                           {formatTime(email.timestamp)}
@@ -168,7 +168,7 @@ export function EmailSummary() {
                       </div>
                     </div>
 
-                    <h3 className={`font-semibold mb-2 ${
+                    <h3 className={`font-semibold mb-2 break-words ${
                       email.isRead
                         ? state.theme === 'dark' ? 'text-gray-400' : 'text-gray-700'
                         : state.theme === 'dark' ? 'text-white' : 'text-gray-900'
@@ -204,7 +204,7 @@ export function EmailSummary() {
                           <div className={`mt-3 p-3 rounded-lg ${
                             state.theme === 'dark' ? 'bg-gray-600' : 'bg-gray-100'
                           }`}>
-                            <p className={`text-sm ${
+                            <p className={`text-sm break-words whitespace-pre-wrap ${
                               state.theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
                             }`}>
                               {email.content}
@@ -245,7 +245,7 @@ export function EmailSummary() {
                             )}
                           </button>
                         </div>
-                        <p className={`text-sm ${
+                        <p className={`text-sm break-words whitespace-pre-wrap ${
                           state.theme === 'dark' ? 'text-green-300' : 'text-green-700'
                         }`}>
                           {email.suggestedReply}

@@ -5,10 +5,16 @@ import { useApp } from '../../contexts/AppContext';
 export function StatsCards() {
   const { state } = useApp();
 
-  const completedTasks = state.tasks.filter(task => task.status === 'completed').length;
-  const pendingTasks = state.tasks.filter(task => task.status === 'pending').length;
-  const highPriorityTasks = state.tasks.filter(task => task.priority === 'high' && task.status !== 'completed').length;
-  const totalEstimatedTime = state.tasks
+  // Safety checks
+  if (!state || !state.tasks) {
+    return null;
+  }
+
+  const tasks = state.tasks || [];
+  const completedTasks = tasks.filter(task => task.status === 'completed').length;
+  const pendingTasks = tasks.filter(task => task.status === 'pending').length;
+  const highPriorityTasks = tasks.filter(task => task.priority === 'high' && task.status !== 'completed').length;
+  const totalEstimatedTime = tasks
     .filter(task => task.status !== 'completed')
     .reduce((acc, task) => acc + (task.estimatedTime || 0), 0);
 
@@ -96,11 +102,11 @@ export function StatsCards() {
             }}
           >
             <div className="flex items-center justify-between mb-4">
-              <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center shadow-lg`}>
+              <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center shadow-lg flex-shrink-0`}>
                 <Icon className="w-6 h-6 text-white" />
               </div>
-              <div className="text-right">
-                <p className={`text-xs font-medium ${
+              <div className="text-right min-w-0 flex-1 ml-2">
+                <p className={`text-xs font-medium truncate ${
                   state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                 }`}>
                   {stat.trend}
@@ -108,18 +114,18 @@ export function StatsCards() {
               </div>
             </div>
             
-            <div>
-              <p className={`text-sm font-semibold mb-1 ${
+            <div className="min-w-0">
+              <p className={`text-sm font-semibold mb-1 truncate ${
                 state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
               }`}>
                 {stat.title}
               </p>
-              <p className={`text-3xl font-bold mb-1 ${stat.textColor} ${
+              <p className={`text-3xl font-bold mb-1 ${stat.textColor} break-words ${
                 stat.isCountdown ? 'animate-pulse' : ''
               }`}>
                 {stat.value}
               </p>
-              <p className={`text-xs ${
+              <p className={`text-xs truncate ${
                 state.theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
               }`}>
                 {stat.subtitle}

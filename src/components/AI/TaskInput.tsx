@@ -10,6 +10,11 @@ export function TaskInput() {
   const { isListening, transcript, isSupported, startListening, stopListening, clearTranscript } = useVoice();
   const [input, setInput] = useState('');
 
+  // Safety check
+  if (!state) {
+    return null;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = input.trim() || transcript.trim();
@@ -143,10 +148,10 @@ export function TaskInput() {
           </div>
         )}
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Flag className={`w-4 h-4 ${
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center space-x-4 flex-wrap">
+            <div className="flex items-center space-x-2 whitespace-nowrap">
+              <Flag className={`w-4 h-4 flex-shrink-0 ${
                 state.theme === 'dark' ? 'text-purple-400' : 'text-purple-600'
               }`} />
               <span className={`text-sm font-medium ${
@@ -155,8 +160,8 @@ export function TaskInput() {
                 Smart priority
               </span>
             </div>
-            <div className="flex items-center space-x-2">
-              <Clock className={`w-4 h-4 ${
+            <div className="flex items-center space-x-2 whitespace-nowrap">
+              <Clock className={`w-4 h-4 flex-shrink-0 ${
                 state.theme === 'dark' ? 'text-blue-400' : 'text-blue-600'
               }`} />
               <span className={`text-sm font-medium ${
@@ -165,8 +170,8 @@ export function TaskInput() {
                 Time estimation
               </span>
             </div>
-            <div className="flex items-center space-x-2">
-              <Tag className={`w-4 h-4 ${
+            <div className="flex items-center space-x-2 whitespace-nowrap">
+              <Tag className={`w-4 h-4 flex-shrink-0 ${
                 state.theme === 'dark' ? 'text-green-400' : 'text-green-600'
               }`} />
               <span className={`text-sm font-medium ${
@@ -180,7 +185,7 @@ export function TaskInput() {
           <button
             type="submit"
             disabled={!displayText.trim() || isProcessing}
-            className={`px-6 py-3 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 text-white rounded-xl font-semibold transition-all duration-200 flex items-center space-x-2 shadow-lg ${
+            className={`px-6 py-3 bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 text-white rounded-xl font-semibold transition-all duration-200 flex items-center space-x-2 shadow-lg flex-shrink-0 ${
               !displayText.trim() || isProcessing
                 ? 'opacity-50 cursor-not-allowed'
                 : 'hover:shadow-xl hover:scale-105 hover:from-purple-600 hover:via-indigo-600 hover:to-blue-600'
@@ -217,7 +222,7 @@ export function TaskInput() {
           <span className={`text-xs ${
             state.theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
           }`}>
-            {state.tasks.filter(t => t.isAIGenerated).length} AI-generated tasks
+            {(state.tasks || []).filter(t => t.isAIGenerated).length} AI-generated tasks
           </span>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Sidebar } from './components/Layout/Sidebar';
 import { Dashboard } from './views/Dashboard';
 import { Tasks } from './views/Tasks';
@@ -6,6 +6,7 @@ import { Emails } from './views/Emails';
 import { Chat } from './views/Chat';
 import { Settings } from './views/Settings';
 import { AppProvider, useApp } from './contexts/AppContext';
+import { applyThemeToDocument, getThemeClasses } from './utils/themeUtils';
 
 // Component error boundary for individual components
 class ComponentErrorBoundary extends React.Component<
@@ -40,6 +41,12 @@ class ComponentErrorBoundary extends React.Component<
 
 function AppContent() {
   const { state } = useApp();
+  const themeClasses = getThemeClasses(state.theme);
+
+  // Apply theme to document when it changes
+  useEffect(() => {
+    applyThemeToDocument(state.theme);
+  }, [state.theme]);
 
   const renderView = () => {
     try {
@@ -70,18 +77,12 @@ function AppContent() {
   };
 
   return (
-    <div className={`min-h-screen flex transition-colors duration-300 ${
-      state.theme === 'dark' ? 'bg-gray-100 dark:bg-gray-900' : 'bg-gray-50'
-    }`}>
+    <div className={`min-h-screen flex transition-colors duration-300 ${themeClasses.background}`}>
       <ComponentErrorBoundary>
         <Sidebar />
       </ComponentErrorBoundary>
-      <main className={`flex-1 p-8 overflow-auto transition-colors duration-300 ${
-        state.theme === 'dark' ? 'bg-gray-100 dark:bg-gray-900' : 'bg-gray-50'
-      }`}>
-        <ComponentErrorBoundary>
-          {renderView()}
-        </ComponentErrorBoundary>
+      <main className={`flex-1 p-8 overflow-auto transition-colors duration-300 ${themeClasses.background}`}>
+        {renderView()}
       </main>
     </div>
   );

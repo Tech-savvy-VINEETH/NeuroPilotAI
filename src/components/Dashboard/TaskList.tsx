@@ -153,10 +153,10 @@ export function TaskList() {
                 )}
               </button>
 
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <h3 className={`font-semibold ${
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <div className="flex items-center space-x-2 min-w-0 flex-1">
+                    <h3 className={`font-semibold break-words ${
                       task.status === 'completed'
                         ? state.theme === 'dark' ? 'text-gray-500 line-through' : 'text-gray-500 line-through'
                         : state.theme === 'dark' ? 'text-white' : 'text-gray-900'
@@ -164,12 +164,12 @@ export function TaskList() {
                       {task.title}
                     </h3>
                     {task.isAIGenerated && (
-                      <Sparkles className="w-4 h-4 text-purple-500" title="AI Generated" />
+                      <Sparkles className="w-4 h-4 text-purple-500 flex-shrink-0" title="AI Generated" />
                     )}
                   </div>
                   <button
                     onClick={() => handleDeleteTask(task.id)}
-                    className={`p-1 rounded-md transition-colors duration-200 ${
+                    className={`p-1 rounded-md transition-colors duration-200 flex-shrink-0 ${
                       state.theme === 'dark'
                         ? 'text-gray-500 hover:text-red-400 hover:bg-red-900/20'
                         : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
@@ -180,22 +180,22 @@ export function TaskList() {
                 </div>
 
                 {task.description && (
-                  <p className={`text-sm mb-3 ${
+                  <p className={`text-sm mb-3 break-words ${
                     state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                   }`}>
                     {task.description}
                   </p>
                 )}
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)}`}>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center space-x-3 flex-wrap">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${getPriorityColor(task.priority)}`}>
                       <Flag className="w-3 h-3 mr-1" />
                       {task.priority}
                     </span>
                     
                     {task.estimatedTime && (
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${
                         state.theme === 'dark' 
                           ? 'bg-gray-600 text-gray-300 border-gray-500' 
                           : 'bg-gray-200 text-gray-700 border-gray-300'
@@ -207,12 +207,12 @@ export function TaskList() {
                   </div>
 
                   {task.tags && task.tags.length > 0 && (
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center space-x-1 flex-wrap">
                       {task.tags.slice(0, 3).map((tag, tagIndex) => (
                         <button
                           key={tagIndex}
                           onClick={() => handleTagClick(tag)}
-                          className={`text-xs px-2 py-1 rounded-full border transition-colors duration-200 ${
+                          className={`text-xs px-2 py-1 rounded-full border transition-colors duration-200 whitespace-nowrap ${
                             getTagColor(tag, state.selectedTags.includes(tag))
                           }`}
                         >
@@ -220,7 +220,7 @@ export function TaskList() {
                         </button>
                       ))}
                       {task.tags.length > 3 && (
-                        <span className={`text-xs ${
+                        <span className={`text-xs whitespace-nowrap ${
                           state.theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
                         }`}>
                           +{task.tags.length - 3}

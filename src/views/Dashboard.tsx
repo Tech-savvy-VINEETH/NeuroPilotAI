@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Component } from 'react';
 import { StatsCards } from '../components/Dashboard/StatsCards';
 import { TaskList } from '../components/Dashboard/TaskList';
 import { EmailSummary } from '../components/Dashboard/EmailSummary';
@@ -7,6 +7,32 @@ import { CalendarWidget } from '../components/Dashboard/CalendarWidget';
 import { TaskInput } from '../components/AI/TaskInput';
 import { useApp } from '../contexts/AppContext';
 // import { useCalendar } from '../hooks/useCalendar';
+
+// Simple error boundary for individual components
+class SafeComponent extends Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.log('Component error caught:', error.message);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return null; // Silently fail - don't show error message
+    }
+    return this.props.children;
+  }
+}
 
 function AppUsageTimer() {
   const [seconds, setSeconds] = useState(0);
@@ -83,19 +109,31 @@ export function Dashboard() {
         </p>
       </div>
 
-      <StatsCards />
+      <SafeComponent>
+        <StatsCards />
+      </SafeComponent>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 space-y-8">
-          <TaskInput />
-          <TaskList />
+          <SafeComponent>
+            <TaskInput />
+          </SafeComponent>
+          <SafeComponent>
+            <TaskList />
+          </SafeComponent>
           <AppUsageTimer />
         </div>
         
         <div className="space-y-8">
-          <CalendarWidget />
-          <WellnessNudges />
-          <EmailSummary />
+          <SafeComponent>
+            <CalendarWidget />
+          </SafeComponent>
+          <SafeComponent>
+            <WellnessNudges />
+          </SafeComponent>
+          <SafeComponent>
+            <EmailSummary />
+          </SafeComponent>
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ export function Settings() {
 
   const handleThemeChange = (theme: Theme) => {
     dispatch({ type: 'SET_THEME', payload: theme });
+    // Theme will be applied via useEffect in AppContext, but apply immediately for instant feedback
     applyThemeToDocument(theme);
   };
 
@@ -76,13 +77,27 @@ export function Settings() {
           action: (
             <button
               onClick={toggleMode}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+              className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center space-x-2 ${
                 state.mode === 'focus'
-                  ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
-                  : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                  ? state.theme === 'dark'
+                    ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white border-2 border-orange-500'
+                    : 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-2 border-orange-400'
+                  : state.theme === 'dark'
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white border-2 border-green-500'
+                    : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-2 border-green-400'
               }`}
             >
-              {state.mode === 'focus' ? 'Focus Mode' : 'Relax Mode'}
+              {state.mode === 'focus' ? (
+                <>
+                  <span className="text-lg">🎯</span>
+                  <span>Focus Mode</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-lg">☕</span>
+                  <span>Relax Mode</span>
+                </>
+              )}
             </button>
           )
         }

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import { Task, Email, ChatMessage, WellnessNudge, FocusSession, Theme, Mode } from '../types';
+import { applyThemeToDocument } from '../utils/themeUtils';
 
 interface AppState {
   theme: Theme;
@@ -342,6 +343,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ...initialState,
     productivityScore: calculateProductivityScore(initialState.tasks)
   });
+
+  // Apply theme on mount and when it changes
+  useEffect(() => {
+    applyThemeToDocument(state.theme);
+  }, [state.theme]);
 
   // Auto-dismiss wellness nudges after 10 seconds
   useEffect(() => {
