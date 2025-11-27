@@ -5,19 +5,26 @@ import { generateTaskInsights, generateChatResponse, generateEmailReply } from '
 export function useAI() {
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const processNaturalLanguageTask = async (input: string): Promise<Task> => {
+  const processNaturalLanguageTask = async (input: string, manualPriority?: 'high' | 'medium' | 'low', manualEstimatedTime?: number): Promise<Task> => {
     setIsProcessing(true);
-    
+
     try {
       const analysis = await generateTaskInsights(input);
-      
+
+      let priority = manualPriority || analysis.priority;
+
+      // Auto-set high priority for short duration tasks if priority is not manually set
+      if (!manualPriority && manualEstimatedTime && manualEstimatedTime <= 30) {
+        priority = 'high';
+      }
+
       const task: Task = {
         id: Date.now().toString(),
         title: analysis.title,
         description: analysis.description,
-        priority: analysis.priority,
+        priority: priority,
         status: 'pending',
-        estimatedTime: analysis.estimatedTime,
+        estimatedTime: manualEstimatedTime || analysis.estimatedTime,
         tags: analysis.tags,
         category: analysis.category,
         createdAt: new Date(),
@@ -36,7 +43,7 @@ export function useAI() {
 
   const generateChatResponseAI = async (message: string, context?: any): Promise<string> => {
     setIsProcessing(true);
-    
+
     try {
       const response = await generateChatResponse(message, context);
       setIsProcessing(false);
@@ -50,7 +57,7 @@ export function useAI() {
 
   const generateEmailReplyAI = async (emailContent: string, context: string): Promise<string> => {
     setIsProcessing(true);
-    
+
     try {
       const reply = await generateEmailReply(emailContent, context);
       setIsProcessing(false);
