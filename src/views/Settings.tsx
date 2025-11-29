@@ -1,8 +1,12 @@
 import React from 'react';
-import { Settings as SettingsIcon, Bell, Mic, Brain, Shield, User, Palette, Check } from 'lucide-react';
+import { Settings as SettingsIcon, Bell, Mic, Brain, Shield, User, Palette, Check, ChevronRight } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { Theme } from '../types';
 import { themeConfigs, applyThemeToDocument } from '../utils/themeUtils';
+import { Card } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { cn } from '../lib/utils';
+import { motion } from 'framer-motion';
 
 export function Settings() {
   const { state, dispatch } = useApp();
@@ -28,6 +32,7 @@ export function Settings() {
     {
       title: 'Appearance & Themes',
       icon: Palette,
+      gradient: 'from-blue-500 to-purple-600',
       settings: [
         {
           name: 'Color Theme',
@@ -39,24 +44,21 @@ export function Settings() {
                   <button
                     key={theme}
                     onClick={() => handleThemeChange(theme)}
-                    className={`relative group p-3 rounded-xl border-2 transition-all duration-200 hover:scale-105 ${
+                    className={cn(
+                      "relative group p-3 rounded-xl border-2 transition-all duration-200 hover:scale-105",
                       state.theme === theme
-                        ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800'
-                        : state.theme === 'dark'
-                          ? 'border-gray-600 hover:border-gray-500'
-                          : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                        ? "border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800"
+                        : "border-[var(--border-color)] hover:border-[var(--text-secondary)]"
+                    )}
                     title={themeConfigs[theme].name}
                   >
-                    <div className={`w-10 h-10 rounded-lg ${getThemePreviewGradient(theme)} shadow-md mx-auto`} />
+                    <div className={cn("w-10 h-10 rounded-lg shadow-md mx-auto", getThemePreviewGradient(theme))} />
                     {state.theme === theme && (
                       <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
                         <Check className="w-3 h-3 text-white" />
                       </div>
                     )}
-                    <span className={`block text-xs mt-2 font-medium text-center leading-tight ${
-                      state.theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-                    }`}>
+                    <span className="block text-xs mt-2 font-medium text-center leading-tight text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]">
                       {themeConfigs[theme].name}
                     </span>
                   </button>
@@ -70,35 +72,39 @@ export function Settings() {
     {
       title: 'Productivity Mode',
       icon: Brain,
+      gradient: 'from-orange-500 to-amber-500',
       settings: [
         {
           name: 'Current Mode',
           description: 'Focus mode for deep work, Relax mode for lighter tasks',
           action: (
-            <button
+            <Button
               onClick={toggleMode}
-              className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 flex items-center space-x-2 ${
+              className={cn(
+                "w-full sm:w-auto px-6 py-6 rounded-xl font-semibold transition-all duration-200 shadow-lg transform hover:scale-105 flex items-center justify-center space-x-3",
                 state.mode === 'focus'
-                  ? state.theme === 'dark'
-                    ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white border-2 border-orange-500'
-                    : 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-2 border-orange-400'
-                  : state.theme === 'dark'
-                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white border-2 border-green-500'
-                    : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-2 border-green-400'
-              }`}
+                  ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white border-2 border-orange-500 hover:from-orange-500 hover:to-amber-500"
+                  : "bg-gradient-to-r from-green-600 to-emerald-600 text-white border-2 border-green-500 hover:from-green-500 hover:to-emerald-500"
+              )}
             >
               {state.mode === 'focus' ? (
                 <>
-                  <span className="text-lg">🎯</span>
-                  <span>Focus Mode</span>
+                  <span className="text-2xl">🎯</span>
+                  <div className="text-left">
+                    <div className="text-sm opacity-90 font-normal">Current Mode</div>
+                    <div className="text-lg font-bold">Focus Mode</div>
+                  </div>
                 </>
               ) : (
                 <>
-                  <span className="text-lg">☕</span>
-                  <span>Relax Mode</span>
+                  <span className="text-2xl">☕</span>
+                  <div className="text-left">
+                    <div className="text-sm opacity-90 font-normal">Current Mode</div>
+                    <div className="text-lg font-bold">Relax Mode</div>
+                  </div>
                 </>
               )}
-            </button>
+            </Button>
           )
         }
       ]
@@ -106,23 +112,26 @@ export function Settings() {
     {
       title: 'Notifications',
       icon: Bell,
+      gradient: 'from-red-500 to-pink-600',
       settings: [
         {
           name: 'Wellness Nudges',
           description: 'Receive reminders for breaks, hydration, and wellness',
           action: (
-            <button className="relative inline-flex items-center h-6 rounded-full w-11 bg-blue-600 transition-colors duration-200">
-              <span className="inline-block w-4 h-4 transform bg-white rounded-full translate-x-6 transition-transform duration-200" />
-            </button>
+            <div className="relative inline-flex items-center cursor-pointer group">
+              <input type="checkbox" className="sr-only peer" defaultChecked />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            </div>
           )
         },
         {
           name: 'Task Reminders',
           description: 'Get notified about upcoming deadlines and priorities',
           action: (
-            <button className="relative inline-flex items-center h-6 rounded-full w-11 bg-blue-600 transition-colors duration-200">
-              <span className="inline-block w-4 h-4 transform bg-white rounded-full translate-x-6 transition-transform duration-200" />
-            </button>
+            <div className="relative inline-flex items-center cursor-pointer group">
+              <input type="checkbox" className="sr-only peer" defaultChecked />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            </div>
           )
         }
       ]
@@ -130,23 +139,26 @@ export function Settings() {
     {
       title: 'Voice & AI',
       icon: Mic,
+      gradient: 'from-cyan-500 to-blue-600',
       settings: [
         {
           name: 'Voice Input',
           description: 'Enable voice commands for task creation and chat',
           action: (
-            <button className="relative inline-flex items-center h-6 rounded-full w-11 bg-blue-600 transition-colors duration-200">
-              <span className="inline-block w-4 h-4 transform bg-white rounded-full translate-x-6 transition-transform duration-200" />
-            </button>
+            <div className="relative inline-flex items-center cursor-pointer group">
+              <input type="checkbox" className="sr-only peer" defaultChecked />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            </div>
           )
         },
         {
           name: 'AI Suggestions',
           description: 'Get intelligent task prioritization and time estimates',
           action: (
-            <button className="relative inline-flex items-center h-6 rounded-full w-11 bg-blue-600 transition-colors duration-200">
-              <span className="inline-block w-4 h-4 transform bg-white rounded-full translate-x-6 transition-transform duration-200" />
-            </button>
+            <div className="relative inline-flex items-center cursor-pointer group">
+              <input type="checkbox" className="sr-only peer" defaultChecked />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            </div>
           )
         }
       ]
@@ -154,16 +166,13 @@ export function Settings() {
     {
       title: 'Privacy & Security',
       icon: Shield,
+      gradient: 'from-emerald-500 to-teal-600',
       settings: [
         {
           name: 'Data Encryption',
           description: 'All your data is encrypted and stored securely',
           action: (
-            <span className={`px-3 py-1 rounded-full text-sm ${
-              state.theme === 'dark' 
-                ? 'bg-green-900/30 text-green-300' 
-                : 'bg-green-100 text-green-700'
-            }`}>
+            <span className="px-3 py-1 rounded-full text-sm bg-green-500/10 text-green-500 border border-green-500/20 font-medium">
               Enabled
             </span>
           )
@@ -172,9 +181,10 @@ export function Settings() {
           name: 'Analytics',
           description: 'Help improve NeuroPilot with anonymous usage data',
           action: (
-            <button className="relative inline-flex items-center h-6 rounded-full w-11 bg-gray-300 transition-colors duration-200">
-              <span className="inline-block w-4 h-4 transform bg-white rounded-full translate-x-1 transition-transform duration-200" />
-            </button>
+            <div className="relative inline-flex items-center cursor-pointer group">
+              <input type="checkbox" className="sr-only peer" />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            </div>
           )
         }
       ]
@@ -182,16 +192,12 @@ export function Settings() {
   ];
 
   return (
-    <div className="space-y-8 h-full">
+    <div className="max-w-5xl mx-auto h-full overflow-y-auto space-y-8 animate-fade-in pb-8">
       <div>
-        <h1 className={`text-3xl font-bold mb-2 ${
-          state.theme === 'dark' ? 'text-white' : 'text-gray-900'
-        }`}>
+        <h1 className="text-3xl font-bold mb-2 text-[var(--text-primary)] tracking-tight">
           Settings
         </h1>
-        <p className={`${
-          state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-        }`}>
+        <p className="text-[var(--text-secondary)]">
           Customize your NeuroPilot experience
         </p>
       </div>
@@ -199,151 +205,119 @@ export function Settings() {
       <div className="space-y-6">
         {settingSections.map((section, sectionIndex) => {
           const Icon = section.icon;
-          
-          return (
-            <div
-              key={section.title}
-              className={`${
-                state.theme === 'dark' 
-                  ? 'bg-gray-800 border-gray-700' 
-                  : 'bg-white border-gray-200'
-              } rounded-xl border shadow-lg p-6 transition-all duration-300`}
-              style={{
-                animation: `fadeInUp 0.5s ease-out ${sectionIndex * 0.1}s both`
-              }}
-            >
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Icon className="w-5 h-5 text-white" />
-                </div>
-                <h2 className={`text-xl font-semibold ${
-                  state.theme === 'dark' ? 'text-white' : 'text-gray-900'
-                }`}>
-                  {section.title}
-                </h2>
-              </div>
 
-              <div className="space-y-6">
-                {section.settings.map((setting, settingIndex) => (
-                  <div
-                    key={setting.name}
-                    className={`${
-                      setting.name === 'Color Theme' ? 'block' : 'flex items-start justify-between'
-                    } py-3`}
-                  >
-                    <div className={`${setting.name === 'Color Theme' ? 'mb-4' : 'flex-1 mr-4'}`}>
-                      <h3 className={`font-medium mb-1 ${
-                        state.theme === 'dark' ? 'text-white' : 'text-gray-900'
-                      }`}>
-                        {setting.name}
-                      </h3>
-                      <p className={`text-sm ${
-                        state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
-                        {setting.description}
-                      </p>
-                    </div>
-                    <div className={`${setting.name === 'Color Theme' ? 'w-full' : 'flex-shrink-0'}`}>
-                      {setting.action}
-                    </div>
+          return (
+            <motion.div
+              key={section.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: sectionIndex * 0.1 }}
+            >
+              <Card className="p-6 bg-[var(--bg-secondary)]/50 backdrop-blur-md border-[var(--border-color)] hover:shadow-lg transition-shadow duration-300">
+                <div className="flex items-center space-x-3 mb-6">
+                  <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shadow-lg bg-gradient-to-br", section.gradient)}>
+                    <Icon className="w-5 h-5 text-white" />
                   </div>
-                ))}
-              </div>
-            </div>
+                  <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+                    {section.title}
+                  </h2>
+                </div>
+
+                <div className="space-y-6">
+                  {section.settings.map((setting, settingIndex) => (
+                    <div
+                      key={setting.name}
+                      className={cn(
+                        "py-3 border-b border-[var(--border-color)] last:border-0",
+                        setting.name === 'Color Theme' ? 'block' : 'flex items-center justify-between'
+                      )}
+                    >
+                      <div className={cn(setting.name === 'Color Theme' ? 'mb-4' : 'flex-1 mr-4')}>
+                        <h3 className="font-medium mb-1 text-[var(--text-primary)]">
+                          {setting.name}
+                        </h3>
+                        <p className="text-sm text-[var(--text-secondary)]">
+                          {setting.description}
+                        </p>
+                      </div>
+                      <div className={cn(setting.name === 'Color Theme' ? 'w-full' : 'flex-shrink-0')}>
+                        {setting.action}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </motion.div>
           );
         })}
       </div>
 
       {/* Profile Section */}
-      <div className={`${
-        state.theme === 'dark' 
-          ? 'bg-gray-800 border-gray-700' 
-          : 'bg-white border-gray-200'
-      } rounded-xl border shadow-lg p-6`}>
-        <div className="flex items-center space-x-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg flex items-center justify-center">
-            <User className="w-5 h-5 text-white" />
-          </div>
-          <h2 className={`text-xl font-semibold ${
-            state.theme === 'dark' ? 'text-white' : 'text-gray-900'
-          }`}>
-            Profile & Account
-          </h2>
-        </div>
-        
-        <div className="space-y-4">
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <h3 className={`font-medium ${
-                state.theme === 'dark' ? 'text-white' : 'text-gray-900'
-              }`}>
-                Productivity Score
-              </h3>
-              <p className={`text-sm ${
-                state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                Your current productivity level
-              </p>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+      >
+        <Card className="p-6 bg-[var(--bg-secondary)]/50 backdrop-blur-md border-[var(--border-color)]">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg flex items-center justify-center shadow-lg">
+              <User className="w-5 h-5 text-white" />
             </div>
-            <div className={`px-4 py-2 rounded-lg ${
-              state.theme === 'dark' 
-                ? 'bg-purple-900/30 text-purple-300' 
-                : 'bg-purple-100 text-purple-700'
-            }`}>
-              <span className="font-bold">{state.productivityScore}%</span>
+            <h2 className="text-xl font-semibold text-[var(--text-primary)]">
+              Profile & Account
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between py-3">
+              <div>
+                <h3 className="font-medium text-[var(--text-primary)]">
+                  Productivity Score
+                </h3>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Your current productivity level
+                </p>
+              </div>
+              <div className="px-4 py-2 rounded-lg bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                <span className="font-bold">{state.productivityScore}%</span>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </Card>
+      </motion.div>
 
       {/* About Section */}
-      <div className={`${
-        state.theme === 'dark' 
-          ? 'bg-gray-800 border-gray-700' 
-          : 'bg-white border-gray-200'
-      } rounded-xl border shadow-lg p-6`}>
-        <h2 className={`text-xl font-semibold mb-4 ${
-          state.theme === 'dark' ? 'text-white' : 'text-gray-900'
-        }`}>
-          About NeuroPilot
-        </h2>
-        <div className="space-y-3">
-          <p className={`text-sm ${
-            state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-          }`}>
-            Version 1.0.0
-          </p>
-          <p className={`text-sm ${
-            state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-          }`}>
-            NeuroPilot is your AI-powered productivity assistant, designed to help you manage tasks, 
-            optimize your schedule, and maintain wellness throughout your workday.
-          </p>
-          <div className="flex items-center space-x-4 pt-2">
-            <button className={`text-sm px-4 py-2 rounded-lg transition-colors duration-200 ${
-              state.theme === 'dark'
-                ? 'text-blue-400 hover:bg-blue-900/20'
-                : 'text-blue-600 hover:bg-blue-50'
-            }`}>
-              Privacy Policy
-            </button>
-            <button className={`text-sm px-4 py-2 rounded-lg transition-colors duration-200 ${
-              state.theme === 'dark'
-                ? 'text-blue-400 hover:bg-blue-900/20'
-                : 'text-blue-600 hover:bg-blue-50'
-            }`}>
-              Terms of Service
-            </button>
-            <button className={`text-sm px-4 py-2 rounded-lg transition-colors duration-200 ${
-              state.theme === 'dark'
-                ? 'text-blue-400 hover:bg-blue-900/20'
-                : 'text-blue-600 hover:bg-blue-50'
-            }`}>
-              Support
-            </button>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+      >
+        <Card className="p-6 bg-[var(--bg-secondary)]/50 backdrop-blur-md border-[var(--border-color)]">
+          <h2 className="text-xl font-semibold mb-4 text-[var(--text-primary)]">
+            About NeuroPilot
+          </h2>
+          <div className="space-y-3">
+            <p className="text-sm text-[var(--text-secondary)]">
+              Version 1.0.0
+            </p>
+            <p className="text-sm text-[var(--text-secondary)]">
+              NeuroPilot is your AI-powered productivity assistant, designed to help you manage tasks,
+              optimize your schedule, and maintain wellness throughout your workday.
+            </p>
+            <div className="flex items-center space-x-4 pt-4">
+              <Button variant="ghost" className="text-blue-500 hover:text-blue-600 hover:bg-blue-500/10">
+                Privacy Policy
+              </Button>
+              <Button variant="ghost" className="text-blue-500 hover:text-blue-600 hover:bg-blue-500/10">
+                Terms of Service
+              </Button>
+              <Button variant="ghost" className="text-blue-500 hover:text-blue-600 hover:bg-blue-500/10">
+                Support
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
+        </Card>
+      </motion.div>
     </div>
   );
 }

@@ -160,7 +160,7 @@ export const themeConfigs: Record<Theme, ThemeConfig> = {
 
 export function getThemeClasses(theme: Theme) {
   const config = themeConfigs[theme];
-  
+
   if (theme === 'dark') {
     return {
       background: 'bg-gray-900',
@@ -181,10 +181,11 @@ export function getThemeClasses(theme: Theme) {
       success: 'bg-green-600',
       warning: 'bg-orange-600',
       error: 'bg-red-600',
-      info: 'bg-blue-600'
+      info: 'bg-blue-600',
+      primaryText: 'text-blue-400'
     };
   }
-  
+
   return {
     background: config.background,
     surface: config.surface,
@@ -204,19 +205,20 @@ export function getThemeClasses(theme: Theme) {
     success: 'bg-green-600',
     warning: 'bg-orange-600',
     error: 'bg-red-600',
-    info: config.primary
+    info: config.primary,
+    primaryText: config.icon
   };
 }
 
 export function applyThemeToDocument(theme: Theme) {
   const root = document.documentElement;
-  
+
   // Remove all theme classes
   root.classList.remove('dark');
   Object.keys(themeConfigs).forEach(t => {
     root.classList.remove(`theme-${t}`);
   });
-  
+
   // Apply new theme
   if (theme === 'dark') {
     root.classList.add('dark');
@@ -224,14 +226,14 @@ export function applyThemeToDocument(theme: Theme) {
   } else {
     root.classList.add(`theme-${theme}`);
     const config = themeConfigs[theme];
-    document.body.style.backgroundColor = config.background.includes('gray-50') ? '#f8f9fc' : 
+    document.body.style.backgroundColor = config.background.includes('gray-50') ? '#f8f9fc' :
       config.background.includes('blue-50') ? '#eff6ff' :
-      config.background.includes('purple-50') ? '#faf5ff' :
-      config.background.includes('green-50') ? '#f0fdf4' :
-      config.background.includes('orange-50') ? '#fff7ed' :
-      config.background.includes('red-50') ? '#fef2f2' :
-      config.background.includes('pink-50') ? '#fdf2f8' :
-      config.background.includes('indigo-50') ? '#eef2ff' :
-      config.background.includes('teal-50') ? '#f0fdfa' : '#f8f9fc';
+        config.background.includes('purple-50') ? '#faf5ff' :
+          config.background.includes('green-50') ? '#f0fdf4' :
+            config.background.includes('orange-50') ? '#fff7ed' :
+              config.background.includes('red-50') ? '#fef2f2' :
+                config.background.includes('pink-50') ? '#fdf2f8' :
+                  config.background.includes('indigo-50') ? '#eef2ff' :
+                    config.background.includes('teal-50') ? '#f0fdfa' : '#f8f9fc';
   }
 }

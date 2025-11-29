@@ -1,9 +1,14 @@
 import React, { useEffect } from 'react';
 import { Sidebar } from './components/Layout/Sidebar';
+import { Header } from './components/Layout/Header';
 import { Dashboard } from './views/Dashboard';
 import { Tasks } from './views/Tasks';
 import { Emails } from './views/Emails';
 import { Chat } from './views/Chat';
+import { Meetings } from './views/Meetings';
+import { Challenges } from './views/Challenges';
+import { AIGlasses } from './views/AIGlasses';
+import { AnalyticsPage } from './views/AnalyticsPage';
 import { Settings } from './views/Settings';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { applyThemeToDocument, getThemeClasses } from './utils/themeUtils';
@@ -59,6 +64,14 @@ function AppContent() {
           return <Emails />;
         case 'chat':
           return <Chat />;
+        case 'meetings':
+          return <Meetings />;
+        case 'challenges':
+          return <Challenges />;
+        case 'analytics':
+          return <AnalyticsPage />;
+        case 'ai-glasses':
+          return <AIGlasses />;
         case 'settings':
           return <Settings />;
         default:
@@ -66,7 +79,6 @@ function AppContent() {
       }
     } catch (error) {
       console.log('Error rendering view:', error);
-      // Return a simple fallback instead of crashing
       return (
         <div className="p-8 text-center">
           <h2 className="text-xl font-semibold mb-4">Loading...</h2>
@@ -77,13 +89,24 @@ function AppContent() {
   };
 
   return (
-    <div className={`min-h-screen flex transition-colors duration-300 ${themeClasses.background}`}>
+    <div className={`h-screen flex transition-colors duration-300 ${themeClasses.background} bg-[var(--bg-primary)]`}>
       <ComponentErrorBoundary>
         <Sidebar />
       </ComponentErrorBoundary>
-      <main className={`flex-1 p-8 overflow-auto transition-colors duration-300 ${themeClasses.background}`}>
-        {renderView()}
-      </main>
+
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <ComponentErrorBoundary>
+          <Header />
+        </ComponentErrorBoundary>
+
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 scroll-smooth">
+          <div className="max-w-7xl mx-auto w-full">
+            <ComponentErrorBoundary>
+              {renderView()}
+            </ComponentErrorBoundary>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

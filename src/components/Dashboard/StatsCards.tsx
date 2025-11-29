@@ -1,9 +1,9 @@
 import React from 'react';
-import { CheckCircle, Clock, TrendingUp, Brain, Timer, Target, Zap, Award } from 'lucide-react';
+import { CheckCircle, Clock, TrendingUp, Brain, Timer, Target, Zap, Award, Trophy } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
 export function StatsCards() {
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
 
   // Safety checks
   if (!state || !state.tasks) {
@@ -64,7 +64,7 @@ export function StatsCards() {
     },
     {
       title: 'Focus Time',
-      value: state.focusSession?.isActive 
+      value: state.focusSession?.isActive
         ? formatFocusTime(state.focusSession.remainingTime || 0)
         : formatTime(totalEstimatedTime),
       subtitle: state.focusSession?.isActive ? 'remaining' : 'estimated',
@@ -90,44 +90,46 @@ export function StatsCards() {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         return (
           <div
             key={stat.title}
-            className={`${stat.bgColor} ${stat.borderColor} p-6 rounded-2xl border shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-105 cursor-pointer`}
+            className={`
+              ${stat.bgColor} ${stat.borderColor} 
+              p-5 md:p-6 rounded-2xl border shadow-sm 
+              transition-all duration-300 ease-spring
+              hover:shadow-lg hover:scale-[1.02] active:scale-95
+              cursor-pointer group
+            `}
             style={{
               animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
             }}
           >
             <div className="flex items-center justify-between mb-4">
-              <div className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center shadow-lg flex-shrink-0`}>
-                <Icon className="w-6 h-6 text-white" />
+              <div className={`w-10 h-10 md:w-12 md:h-12 ${stat.color} rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow flex-shrink-0`}>
+                <Icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
               </div>
               <div className="text-right min-w-0 flex-1 ml-2">
-                <p className={`text-xs font-medium truncate ${
-                  state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                }`}>
+                <p className={`text-xs font-medium truncate ${state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
                   {stat.trend}
                 </p>
               </div>
             </div>
-            
+
             <div className="min-w-0">
-              <p className={`text-sm font-semibold mb-1 truncate ${
-                state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-              }`}>
+              <p className={`text-sm font-semibold mb-1 truncate ${state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                }`}>
                 {stat.title}
               </p>
-              <p className={`text-3xl font-bold mb-1 ${stat.textColor} break-words ${
-                stat.isCountdown ? 'animate-pulse' : ''
-              }`}>
+              <p className={`text-2xl md:text-3xl font-bold mb-1 ${stat.textColor} break-words ${(stat as any).isCountdown ? 'animate-pulse' : ''
+                }`}>
                 {stat.value}
               </p>
-              <p className={`text-xs truncate ${
-                state.theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
-              }`}>
+              <p className={`text-xs truncate ${state.theme === 'dark' ? 'text-gray-500' : 'text-gray-500'
+                }`}>
                 {stat.subtitle}
               </p>
             </div>

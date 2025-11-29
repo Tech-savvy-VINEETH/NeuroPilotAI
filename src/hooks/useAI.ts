@@ -41,7 +41,7 @@ export function useAI() {
     }
   };
 
-  const generateChatResponseAI = async (message: string, context?: any): Promise<string> => {
+  const generateChatResponseAI = async (message: string, context?: any): Promise<string | any> => {
     setIsProcessing(true);
 
     try {

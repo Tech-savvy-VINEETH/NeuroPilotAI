@@ -27,8 +27,20 @@ export interface TaskAnalysis {
   dueDate?: string;
 }
 
+export interface ActionResponse {
+  type: 'action';
+  action: 'schedule_meeting' | 'create_task' | 'send_email' | 'update_task';
+  data: any;
+  response: string;
+}
+
+export interface ChatResponse {
+  type: 'chat';
+  response: string;
+}
+
 // Enhanced chat response using backend with context
-export async function generateChatResponse(message: string, context?: any): Promise<string> {
+export async function generateChatResponse(message: string, context?: any): Promise<string | ActionResponse | ChatResponse> {
   try {
     // Try backend first with enhanced context
     const response = await fetch(`${BACKEND_URL}/ask`, {
@@ -46,6 +58,10 @@ export async function generateChatResponse(message: string, context?: any): Prom
 
     if (response.ok) {
       const data = await response.json();
+      // Return the full object if it has a type (action or chat), otherwise just the answer string
+      if (data.type) {
+        return data as ActionResponse | ChatResponse;
+      }
       return data.answer || "I'm here to help optimize your productivity! How can I assist you today?";
     } else {
       throw new Error(`Backend API failed with status ${response.status}`);
@@ -55,7 +71,7 @@ export async function generateChatResponse(message: string, context?: any): Prom
     if (error instanceof Error && error.name === 'AbortError') {
       console.log('Backend request timed out, using fallback response');
     }
-    
+
     // Fallback to OpenAI if available
     if (openai) {
       try {
@@ -73,7 +89,7 @@ export async function generateChatResponse(message: string, context?: any): Prom
             {
               role: "system",
               content: `You are NeuroPilot, an AI productivity assistant. You help users manage tasks, optimize schedules, maintain wellness, and boost productivity. 
-
+              
               Key capabilities:
               - Task management and prioritization
               - Time management and focus techniques
@@ -98,7 +114,7 @@ export async function generateChatResponse(message: string, context?: any): Prom
         // Don't log errors to console to avoid spam
       }
     }
-    
+
     // Final fallback to enhanced local responses
     return generateEnhancedChatResponse(message, context);
   }
@@ -170,7 +186,7 @@ export async function generateTaskInsights(prompt: string): Promise<TaskAnalysis
       console.error('OpenAI task analysis failed:', error);
     }
   }
-  
+
   return generateEnhancedFallbackTask(prompt);
 }
 
@@ -230,35 +246,35 @@ export async function generateEmailReply(emailContent: string, context: string):
       console.error('OpenAI email reply failed:', error);
     }
   }
-  
+
   return generateEnhancedEmailReply(emailContent, context);
 }
 
 // Enhanced fallback functions with intelligent behavior
 function generateEnhancedFallbackTask(prompt: string): TaskAnalysis {
   const lowerPrompt = prompt.toLowerCase();
-  
+
   // Analyze urgency keywords
   const urgencyKeywords = ['urgent', 'asap', 'immediately', 'deadline', 'due today', 'critical'];
   const isUrgent = urgencyKeywords.some(keyword => lowerPrompt.includes(keyword));
-  
+
   // Analyze complexity indicators
   const complexKeywords = ['presentation', 'report', 'analysis', 'research', 'strategy', 'plan'];
   const isComplex = complexKeywords.some(keyword => lowerPrompt.includes(keyword));
-  
+
   // Determine priority
   let priority: 'high' | 'medium' | 'low' = 'medium';
   if (isUrgent) priority = 'high';
   else if (lowerPrompt.includes('low priority') || lowerPrompt.includes('when possible')) priority = 'low';
-  
+
   // Estimate time based on task type
   let estimatedTime = 60; // default
   if (lowerPrompt.includes('email') || lowerPrompt.includes('call') || lowerPrompt.includes('message')) estimatedTime = 15;
   else if (lowerPrompt.includes('meeting')) estimatedTime = 30;
   else if (isComplex) estimatedTime = 120;
-  
+
   // Intelligent task mapping
-  const taskMappings = {
+  const taskMappings: Record<string, Partial<TaskAnalysis>> = {
     'pitch': {
       title: 'Prepare investor pitch presentation',
       description: 'Create comprehensive pitch deck covering problem, solution, market size, business model, and financial projections. Include compelling visuals and practice delivery.',
@@ -295,9 +311,13 @@ function generateEnhancedFallbackTask(prompt: string): TaskAnalysis {
   for (const [key, value] of Object.entries(taskMappings)) {
     if (lowerPrompt.includes(key)) {
       return {
-        ...value,
+        title: value.title!,
+        description: value.description!,
         priority,
-        estimatedTime
+        estimatedTime,
+        tags: value.tags!,
+        category: value.category!,
+        dueDate: undefined
       };
     }
   }
@@ -319,7 +339,7 @@ function generateEnhancedChatResponse(message: string, context?: any): string {
   const completedTasks = tasks.filter((t: any) => t.status === 'completed').length;
   const pendingTasks = tasks.filter((t: any) => t.status === 'pending').length;
   const highPriorityTasks = tasks.filter((t: any) => t.priority === 'high' && t.status !== 'completed');
-  
+
   // Intelligent response patterns
   const responses = {
     focus: [
@@ -353,19 +373,19 @@ function generateEnhancedChatResponse(message: string, context?: any): string {
   if (lowerMessage.includes('focus') || lowerMessage.includes('concentrate') || lowerMessage.includes('priority')) {
     return responses.focus[Math.floor(Math.random() * responses.focus.length)];
   }
-  
+
   if (lowerMessage.includes('plan') || lowerMessage.includes('schedule') || lowerMessage.includes('today') || lowerMessage.includes('summary')) {
     return responses.plan[Math.floor(Math.random() * responses.plan.length)];
   }
-  
+
   if (lowerMessage.includes('break') || lowerMessage.includes('rest') || lowerMessage.includes('tired') || lowerMessage.includes('pause')) {
     return responses.break[Math.floor(Math.random() * responses.break.length)];
   }
-  
+
   if (lowerMessage.includes('wellness') || lowerMessage.includes('health') || lowerMessage.includes('hydrate') || lowerMessage.includes('stretch')) {
     return responses.wellness[Math.floor(Math.random() * responses.wellness.length)];
   }
-  
+
   if (lowerMessage.includes('motivation') || lowerMessage.includes('encourage') || lowerMessage.includes('stuck') || lowerMessage.includes('help')) {
     return responses.motivation[Math.floor(Math.random() * responses.motivation.length)];
   }
@@ -376,30 +396,30 @@ function generateEnhancedChatResponse(message: string, context?: any): string {
 
 function generateEnhancedEmailReply(emailContent: string, context: string): string {
   const lowerContent = emailContent.toLowerCase();
-  
+
   // Use context to provide more personalized responses
   const isWorkRelated = context.toLowerCase().includes('work') || context.toLowerCase().includes('business');
-  
+
   if (lowerContent.includes('deadline') || lowerContent.includes('urgent')) {
     const urgency = isWorkRelated ? "I'll prioritize this and provide a response by end of day." : "I'll get back to you as soon as possible.";
     return `Thank you for the urgent update. ${urgency} I'll keep you posted on progress.`;
   }
-  
+
   if (lowerContent.includes('meeting') || lowerContent.includes('schedule')) {
     const scheduling = isWorkRelated ? "I'll check my work calendar" : "I'll check my schedule";
     return `Thanks for reaching out about scheduling. ${scheduling} and send you a few time options that work well for both of us.`;
   }
-  
+
   if (lowerContent.includes('project') || lowerContent.includes('update')) {
     const response = isWorkRelated ? "Thank you for the project update. I'll review the details and provide feedback shortly." : "Thank you for the update. I'll review this and get back to you.";
     return `${response} Let me know if you need anything else in the meantime.`;
   }
-  
+
   if (lowerContent.includes('question') || lowerContent.includes('clarification')) {
     const timeframe = isWorkRelated ? "within 24 hours" : "as soon as I can";
     return `Great question! I'll gather the information you need and get back to you with a comprehensive response ${timeframe}.`;
   }
-  
+
   // Use context for more personalized closing
   const closing = isWorkRelated ? "I appreciate your communication and look forward to working with you." : "I appreciate you reaching out.";
   return `Thank you for your email. I've received your message and will respond appropriately. ${closing}`;

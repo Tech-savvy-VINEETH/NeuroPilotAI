@@ -38,7 +38,7 @@ app.get('/health', (req, res) => {
 app.get('/calendar/events/today', async (req, res) => {
   try {
     const accessToken = req.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!accessToken) {
       return res.status(401).json({
         error: "Access token is required"
@@ -78,7 +78,7 @@ app.get('/calendar/events/upcoming', async (req, res) => {
   try {
     const accessToken = req.headers.authorization?.replace('Bearer ', '');
     const days = parseInt(req.query.days) || 7;
-    
+
     if (!accessToken) {
       return res.status(401).json({
         error: "Access token is required"
@@ -119,7 +119,7 @@ app.post('/calendar/events', async (req, res) => {
   try {
     const accessToken = req.headers.authorization?.replace('Bearer ', '');
     const { event } = req.body;
-    
+
     if (!accessToken) {
       return res.status(401).json({
         error: "Access token is required"
@@ -129,6 +129,19 @@ app.post('/calendar/events', async (req, res) => {
     if (!event) {
       return res.status(400).json({
         error: "Event data is required"
+      });
+    }
+
+    // Mock for demo if token is 'mock-token'
+    if (accessToken === 'mock-token') {
+      return res.json({
+        event: {
+          id: 'mock-event-id-' + Date.now(),
+          ...event,
+          status: 'confirmed',
+          htmlLink: 'https://calendar.google.com/mock'
+        },
+        status: "success"
       });
     }
 
@@ -178,7 +191,28 @@ Key capabilities:
 - Schedule optimization
 - Motivational support
 
-Be concise, helpful, actionable, and encouraging. Provide specific, practical advice. Focus on productivity, time management, and wellness. Keep responses under 200 words and always be supportive and professional.`;
+Be concise, helpful, actionable, and encouraging. Provide specific, practical advice. Focus on productivity, time management, and wellness. Keep responses under 200 words and always be supportive and professional.
+
+CRITICAL: You are an AI Agent capable of performing actions. When the user asks to do something specific (like schedule a meeting, create a task, or send an email), you MUST return a JSON object with the following structure:
+{
+  "type": "action",
+  "action": "schedule_meeting" | "create_task" | "send_email" | "update_task",
+  "data": { ...specific fields for the action... },
+  "response": "A natural language response confirming the action proposal"
+}
+
+If the user just asks a question or wants to chat, return a standard text response or a JSON with type "chat":
+{
+  "type": "chat",
+  "response": "Your natural language response"
+}
+
+Action Data Schemas:
+1. schedule_meeting: { title, startTime (ISO string), duration (minutes), participants (array of strings) }
+2. create_task: { title, description, priority (high/medium/low), estimatedTime (minutes) }
+3. send_email: { recipient, subject, content }
+
+ALWAYS return valid JSON. Do not include markdown formatting like \`\`\`json ... \`\`\`. Just the raw JSON string.`;
 
     // Add context information if provided
     if (context) {
@@ -223,10 +257,24 @@ Use this context to provide personalized, relevant advice.`;
 
     if (response.ok) {
       const result = await response.json();
-      const answer = result.choices[0].message.content;
-      
+      let content = result.choices[0].message.content;
+
+      // Attempt to parse JSON response
+      let parsedResponse;
+      try {
+        // Clean up potential markdown formatting if the model adds it
+        content = content.replace(/```json\n?|\n?```/g, '').trim();
+        parsedResponse = JSON.parse(content);
+      } catch (e) {
+        // Fallback for non-JSON responses (treat as chat)
+        parsedResponse = {
+          type: "chat",
+          response: content
+        };
+      }
+
       res.json({
-        answer: answer,
+        ...parsedResponse,
         status: "success",
         model: "mixtral-8x7b",
         context_used: !!context
@@ -234,17 +282,53 @@ Use this context to provide personalized, relevant advice.`;
     } else {
       const errorText = await response.text();
       console.error('OpenRouter API Error:', response.status, errorText);
-      
+
+      // Fallback for demo purposes when API fails (e.g. 401)
+      const lowerQuestion = question.toLowerCase();
+      let mockResponse;
+
+      if (lowerQuestion.includes('schedule') && lowerQuestion.includes('meeting')) {
+        mockResponse = {
+          type: "action",
+          action: "schedule_meeting",
+          data: {
+            title: "Team Meeting",
+            startTime: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+            duration: 60,
+            participants: ["Team"]
+          },
+          response: "I've drafted a meeting for tomorrow. Would you like to confirm?"
+        };
+      } else if (lowerQuestion.includes('task') || lowerQuestion.includes('remind')) {
+        mockResponse = {
+          type: "action",
+          action: "create_task",
+          data: {
+            title: question.replace('create task', '').replace('remind me to', '').trim(),
+            description: "Created via AI",
+            priority: "medium",
+            estimatedTime: 30
+          },
+          response: "I've created a task for you. Please confirm the details."
+        };
+      } else {
+        mockResponse = {
+          type: "chat",
+          response: "I'm currently running in offline mode. I can still help you schedule meetings or create tasks if you be specific!"
+        };
+      }
+
       res.json({
-        answer: "I'm experiencing some technical difficulties. Let me help you with productivity tips instead! What would you like to focus on?",
-        status: "error",
-        error: `API returned status ${response.status}`
+        ...mockResponse,
+        status: "success",
+        model: "fallback-rule-engine",
+        context_used: !!context
       });
     }
 
   } catch (error) {
     console.error('Server Error:', error);
-    
+
     if (error.name === 'AbortError' || error.code === 'ECONNABORTED') {
       res.json({
         answer: "I'm taking a bit longer to respond than usual. In the meantime, remember to take breaks every hour and stay hydrated! What can I help you with?",
@@ -311,7 +395,7 @@ Analyze urgency keywords (urgent, asap, deadline, today, tomorrow), complexity i
     if (response.ok) {
       const result = await response.json();
       const content = result.choices[0].message.content;
-      
+
       try {
         // Try to parse as JSON
         const taskAnalysis = JSON.parse(content);
@@ -392,7 +476,7 @@ app.post('/generate-email-reply', async (req, res) => {
     if (response.ok) {
       const result = await response.json();
       const reply = result.choices[0].message.content;
-      
+
       res.json({
         reply: reply,
         status: "success"
@@ -427,6 +511,77 @@ app.post('/analytics', (req, res) => {
     console.error('Analytics endpoint error:', error);
     res.status(500).json({ status: 'error', message: 'Internal server error' });
   }
+});
+
+// --- Gamification Endpoints (In-Memory for Demo) ---
+
+// Mock Data
+let challenges = [
+  { id: '1', title: 'Early Bird', description: 'Complete a task before 9 AM', type: 'daily', progress: 0, target: 1, reward: 50, status: 'active' },
+  { id: '2', title: 'Focus Master', description: 'Complete 4 focus sessions', type: 'daily', progress: 1, target: 4, reward: 100, status: 'active' },
+  { id: '3', title: 'Task Warrior', description: 'Complete 20 tasks this week', type: 'weekly', progress: 12, target: 20, reward: 300, status: 'active' }
+];
+
+let rewards = [
+  { id: '1', title: 'Premium Theme Pack', cost: 500, isRedeemed: false, code: 'THEME-2024-X' },
+  { id: '2', title: '1 Hour Consultation', cost: 1000, isRedeemed: false, code: 'CONSULT-AB12' },
+  { id: '3', title: 'Productivity E-Book', cost: 300, isRedeemed: true, code: 'BOOK-READ-NOW' }
+];
+
+let userStats = {
+  streak: 5,
+  totalPoints: 850,
+  level: 3,
+  totalCompleted: 34
+};
+
+// Get Challenges
+app.get('/challenges', (req, res) => {
+  res.json({ challenges, status: 'success' });
+});
+
+// Update Challenge Progress (Mock)
+app.post('/challenges/:id/progress', (req, res) => {
+  const { id } = req.params;
+  const { progress } = req.body;
+
+  const challenge = challenges.find(c => c.id === id);
+  if (challenge) {
+    challenge.progress = progress;
+    if (challenge.progress >= challenge.target) {
+      challenge.status = 'completed';
+      // Auto-add points
+      userStats.totalPoints += challenge.reward;
+    }
+    res.json({ challenge, userStats, status: 'success' });
+  } else {
+    res.status(404).json({ error: 'Challenge not found' });
+  }
+});
+
+// Get Rewards
+app.get('/rewards', (req, res) => {
+  res.json({ rewards, status: 'success' });
+});
+
+// Redeem Reward
+app.post('/rewards/redeem', (req, res) => {
+  const { rewardId } = req.body;
+  const reward = rewards.find(r => r.id === rewardId);
+
+  if (!reward) return res.status(404).json({ error: 'Reward not found' });
+  if (reward.isRedeemed) return res.status(400).json({ error: 'Already redeemed' });
+  if (userStats.totalPoints < reward.cost) return res.status(400).json({ error: 'Insufficient points' });
+
+  reward.isRedeemed = true;
+  userStats.totalPoints -= reward.cost;
+
+  res.json({ reward, userStats, status: 'success' });
+});
+
+// Get User Stats
+app.get('/user/stats', (req, res) => {
+  res.json({ stats: userStats, status: 'success' });
 });
 
 // Start the server

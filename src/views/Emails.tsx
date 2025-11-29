@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Star, Reply, Archive, Trash2, Clock, Filter, Search } from 'lucide-react';
+import { Mail, Star, Reply, Archive, Trash2, Clock, Filter, Search, Sparkles, ArrowRight } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 
 export function Emails() {
@@ -47,8 +47,8 @@ export function Emails() {
 
         <div className="flex items-center space-x-3">
           <div className={`px-4 py-2 rounded-lg ${state.theme === 'dark'
-              ? 'bg-blue-900/30 text-blue-300'
-              : 'bg-blue-100 text-blue-700'
+            ? 'bg-blue-900/30 text-blue-300'
+            : 'bg-blue-100 text-blue-700'
             }`}>
             <span className="text-sm font-medium">{unreadCount} unread</span>
           </div>
@@ -57,8 +57,8 @@ export function Emails() {
 
       {/* Email Controls */}
       <div className={`${state.theme === 'dark'
-          ? 'bg-gray-800 border-gray-700'
-          : 'bg-white border-gray-200'
+        ? 'bg-gray-800 border-gray-700'
+        : 'bg-white border-gray-200'
         } rounded-xl border p-4`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -69,14 +69,14 @@ export function Emails() {
                 type="text"
                 placeholder="Search emails..."
                 className={`pl-10 pr-4 py-2 rounded-lg border ${state.theme === 'dark'
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                    : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                  : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
                   }`}
               />
             </div>
             <button className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-colors ${state.theme === 'dark'
-                ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+              : 'border-gray-300 text-gray-700 hover:bg-gray-50'
               }`}>
               <Filter className="w-4 h-4" />
               <span className="text-sm">Filter</span>
@@ -94,16 +94,16 @@ export function Emails() {
 
       {/* Email List */}
       <div className={`${state.theme === 'dark'
-          ? 'bg-gray-800 border-gray-700'
-          : 'bg-white border-gray-200'
+        ? 'bg-gray-800 border-gray-700'
+        : 'bg-white border-gray-200'
         } rounded-xl border shadow-lg overflow-hidden`}>
         <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {state.emails.map((email, index) => (
             <div
               key={email.id}
               className={`p-6 transition-all duration-300 cursor-pointer ${state.theme === 'dark'
-                  ? 'hover:bg-gray-700'
-                  : 'hover:bg-gray-50'
+                ? 'hover:bg-gray-700'
+                : 'hover:bg-gray-50'
                 } ${!email.isRead ? (state.theme === 'dark' ? 'bg-blue-900/20' : 'bg-blue-50') : ''
                 }`}
               style={{
@@ -114,16 +114,16 @@ export function Emails() {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${email.isRead
-                      ? state.theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
-                      : 'bg-gradient-to-br from-blue-500 to-purple-600'
+                    ? state.theme === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
+                    : 'bg-gradient-to-br from-blue-500 to-purple-600'
                     }`}>
                     <Mail className={`w-5 h-5 ${email.isRead ? 'text-gray-500' : 'text-white'
                       }`} />
                   </div>
                   <div>
                     <h3 className={`font-semibold ${email.isRead
-                        ? state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                        : state.theme === 'dark' ? 'text-white' : 'text-gray-900'
+                      ? state.theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                      : state.theme === 'dark' ? 'text-white' : 'text-gray-900'
                       }`}>
                       {email.sender}
                     </h3>
@@ -143,29 +143,60 @@ export function Emails() {
 
                 <div className="flex items-center space-x-2">
                   <button className={`p-2 rounded-lg transition-colors duration-200 ${state.theme === 'dark'
-                      ? 'text-gray-400 hover:text-green-400 hover:bg-green-900/20'
-                      : 'text-gray-500 hover:text-green-600 hover:bg-green-50'
+                    ? 'text-gray-400 hover:text-green-400 hover:bg-green-900/20'
+                    : 'text-gray-500 hover:text-green-600 hover:bg-green-50'
                     }`}>
                     <Reply className="w-4 h-4" />
                   </button>
                   <button className={`p-2 rounded-lg transition-colors duration-200 ${state.theme === 'dark'
-                      ? 'text-gray-400 hover:text-blue-400 hover:bg-blue-900/20'
-                      : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
+                    ? 'text-gray-400 hover:text-blue-400 hover:bg-blue-900/20'
+                    : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
                     }`}>
                     <Archive className="w-4 h-4" />
                   </button>
                   <button className={`p-2 rounded-lg transition-colors duration-200 ${state.theme === 'dark'
-                      ? 'text-gray-400 hover:text-red-400 hover:bg-red-900/20'
-                      : 'text-gray-500 hover:text-red-600 hover:bg-red-50'
+                    ? 'text-gray-400 hover:text-red-400 hover:bg-red-900/20'
+                    : 'text-gray-500 hover:text-red-600 hover:bg-red-50'
                     }`}>
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
+              {/* Smart Task Link Suggestion */}
+              {(() => {
+                const matchingTask = state.tasks.find(task =>
+                  task.status !== 'completed' &&
+                  (email.subject.toLowerCase().includes(task.title.toLowerCase()) ||
+                    task.title.toLowerCase().includes(email.subject.toLowerCase()))
+                );
+
+                if (matchingTask) {
+                  return (
+                    <div className={`mt-2 mb-2 flex items-center space-x-2 text-xs ${state.theme === 'dark' ? 'text-purple-400' : 'text-purple-600'
+                      }`}>
+                      <Sparkles className="w-3 h-3" />
+                      <span>Suggested link: </span>
+                      <button
+                        className="font-medium hover:underline flex items-center"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          console.log(`Linked email ${email.id} to task ${matchingTask.id}`);
+                          // In a real app, this would update the task/email relation in DB
+                        }}
+                      >
+                        {matchingTask.title}
+                        <ArrowRight className="w-3 h-3 ml-1" />
+                      </button>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               <h2 className={`text-lg font-semibold mb-3 ${email.isRead
-                  ? state.theme === 'dark' ? 'text-gray-400' : 'text-gray-700'
-                  : state.theme === 'dark' ? 'text-white' : 'text-gray-900'
+                ? state.theme === 'dark' ? 'text-gray-400' : 'text-gray-700'
+                : state.theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
                 {email.subject}
               </h2>
@@ -201,8 +232,8 @@ export function Emails() {
                     {email.suggestedReply}
                   </p>
                   <button className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${state.theme === 'dark'
-                      ? 'bg-green-700 text-green-100 hover:bg-green-600'
-                      : 'bg-green-600 text-white hover:bg-green-700'
+                    ? 'bg-green-700 text-green-100 hover:bg-green-600'
+                    : 'bg-green-600 text-white hover:bg-green-700'
                     }`}>
                     Use This Reply
                   </button>
